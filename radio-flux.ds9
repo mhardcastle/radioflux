@@ -1,0 +1,9 @@
+# Radio flux tasks
+Radio flux measurement
+*
+menu
+echo "$filename\n$regions(source,ds9,image)\n$regions(background,ds9,image)\n" | REPLACE/radioflux-ds9.py | $text
+Radio flux measurement (background subtraction)
+*
+menu
+echo "$filename\n$regions(source,ds9,image)\n$regions(background,ds9,image)\n" | REPLACE/radioflux-ds9.py -s | $text
