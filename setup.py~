@@ -1,5 +1,0 @@
-from distutils.core import setup
-setup(name='radioflux',
-      version='1.0',
-      packages=['radioflux'],
-      )
