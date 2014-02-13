@@ -48,8 +48,8 @@ class radiomap:
             w=wcs.WCS(self.prhd)
             cd1=-w.wcs.cdelt[0]
             cd2=w.wcs.cdelt[1]
-            if (cd1!=cd2):
-                raise RadioError('Pixels are not square')
+            if ((cd1-cd2)/cd1)>1.0001:
+                raise RadioError('Pixels are not square (%g, %g)' % (cd1, cd2))
 
             self.bmaj/=cd1
             self.bmin/=cd1
