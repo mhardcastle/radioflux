@@ -39,11 +39,17 @@ class radiomap:
             if self.bmaj==None:
                 raise RadioError('No beam information found')
 
+# Various possibilities for the frequency
             self.frq=self.prhd.get('RESTFRQ')
             if self.frq==None:
-                ctype3=self.prhd.get('CTYPE3')
-                if ctype3=='FREQ':
-                    self.frq=self.prhd.get('CRVAL3')
+                self.frq=self.prhd.get('RESTFREQ')
+                if self.frq==None:
+                    ctype3=self.prhd.get('CTYPE3')
+                    if ctype3=='FREQ':
+                        self.frq=self.prhd.get('CRVAL3')
+                    else:
+                        print('Warning, can\'t get frequency -- set to zero')
+                        self.frq=0
 
             w=wcs.WCS(self.prhd)
             cd1=-w.wcs.cdelt[0]
@@ -59,7 +65,13 @@ class radiomap:
             self.area=2.0*np.pi*(self.bmaj*self.bmin)/(gfactor*gfactor)
             if verbose:
                 print 'beam area is',self.area,'pixels'
-            self.d=self.f.data[0,0]
+
+# now a bit of a hack to extract the image. Some AIPS-type images are data cubes with two null axes; other FITS images are just 2D images.
+
+            if len(np.shape(self.f.data))==4:
+                self.d=self.f.data[0,0]
+            else:
+                self.d=self.f.data
 
 class applyregion:
     """ apply a region from pyregion to a radiomap """
