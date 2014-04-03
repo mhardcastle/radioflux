@@ -91,6 +91,18 @@ class applyregion:
 
 # Command-line running
 
+def printflux(rm,region,noise,bgsub,background=0,label=''):
+    if bgsub:
+        fg=applyregion(rm,region,offsource=noise,background=background)
+    else:
+        fg=applyregion(rm,region,offsource=noise)
+
+    if noise:
+        print filename,label,'%g' % rm.frq,fg.flux,fg.error
+    else:
+        print filename,label,'%g' % rm.frq,fg.flux
+
+
 if __name__ == "__main__":
     import sys
     import argparse
@@ -100,6 +112,7 @@ if __name__ == "__main__":
                         help='FITS files to process')
     parser.add_argument('-f','--foreground', dest='fgr', action='store',default='ds9.reg',help='Foreground region file to use')
     parser.add_argument('-b','--background', dest='bgr', action='store',default='',help='Background region file to use')
+    parser.add_argument('-i','--individual', dest='indiv', action='store_const', const=1,default=0,help='Break composite region file into individual regions')
     parser.add_argument('-s','--subtract', dest='bgsub', action='store_const', const=1,default=0,help='Subtract background')
 
     args = parser.parse_args()
@@ -112,20 +125,30 @@ if __name__ == "__main__":
             bg_ir=pyregion.open(args.bgr).as_imagecoord(rm.prhd)
             bg=applyregion(rm,bg_ir)
             noise=bg.rms
+            background=bg.mean
         else:
             if args.bgsub:
                 raise RadioError('Background subtraction requested but no bg region')
             noise=0
+            background=0
 
         fg_ir=pyregion.open(args.fgr).as_imagecoord(rm.prhd)
-        if args.bgsub:
-            fg=applyregion(rm,fg_ir,offsource=noise,background=bg.mean)
+
+        if args.indiv:
+            for n,reg in enumerate(fg_ir):
+                fg=pyregion.ShapeList([reg])
+                printflux(rm,fg,noise,args.bgsub,background,label=n+1)
         else:
-            fg=applyregion(rm,fg_ir,offsource=noise)
-        
-        if noise:
-            print filename,'%g' % rm.frq,fg.flux,fg.error
-        else:
-            print filename,'%g' % rm.frq,fg.flux
+            printflux(rm,fg_ir,noise,args.bgsub,background)
+
+#        if args.bgsub:
+#            fg=applyregion(rm,fg_ir,offsource=noise,background=bg.mean)
+#        else:
+#            fg=applyregion(rm,fg_ir,offsource=noise)
+#        
+#        if noise:
+#            print filename,'%g' % rm.frq,fg.flux,fg.error
+#        else:
+#            print filename,'%g' % rm.frq,fg.flux
         fitsfile.close()
 
