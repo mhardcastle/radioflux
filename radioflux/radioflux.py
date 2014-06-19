@@ -7,6 +7,36 @@ import numpy as np
 import sys
 import warnings
 
+def flatten(f):
+    """ Flatten a fits file so that it becomes a 2D image. Return new header and data """
+
+    naxis=f[0].header['NAXIS']
+    if naxis<2:
+        raise RadioError('Can\'t make map from this')
+    if naxis==2:
+        return f[0].header,f[0].data
+
+    w = wcs.WCS(f[0].header)
+    wn=wcs.WCS(naxis=2)
+    
+    wn.wcs.crpix[0]=w.wcs.crpix[0]
+    wn.wcs.crpix[1]=w.wcs.crpix[1]
+    wn.wcs.cdelt=w.wcs.cdelt[0:2]
+    wn.wcs.crval=w.wcs.crval[0:2]
+    wn.wcs.ctype[0]=w.wcs.ctype[0]
+    wn.wcs.ctype[1]=w.wcs.ctype[1]
+    
+    header = wn.to_header()
+    header["NAXIS"]=2
+    copy=('EQUINOX','EPOCH')
+    for k in copy:
+        r=f[0].header.get(k)
+        if r:
+            header[k]=r
+
+    slice=(0,)*(naxis-2)+(np.s_[:],)*2
+    return header,f[0].data[slice]
+
 class RadioError(Exception):
     """Base class for exceptions in this module."""
     pass
@@ -74,15 +104,8 @@ class radiomap:
             if verbose:
                 print 'beam area is',self.area,'pixels'
 
-# now a bit of a hack to extract the image. Some AIPS-type images are data cubes with two null axes; other FITS images are just 2D images.
-
-            axes=len(np.shape(self.f.data))
-            if axes==4:
-                self.d=self.f.data[0,0]
-            elif axes==3:
-                self.d=self.f.data[0]
-            else:
-                self.d=self.f.data
+            self.fhead,self.d=flatten(fitsfile)
+            print np.shape(self.d)
 
 class applyregion:
     """ apply a region from pyregion to a radiomap """
@@ -133,7 +156,7 @@ if __name__ == "__main__":
         fitsfile=fits.open(filename)
         rm=radiomap(fitsfile)
         if args.bgr:
-            bg_ir=pyregion.open(args.bgr).as_imagecoord(rm.prhd)
+            bg_ir=pyregion.open(args.bgr).as_imagecoord(rm.fhead)
             bg=applyregion(rm,bg_ir)
             noise=bg.rms
             background=bg.mean
@@ -143,7 +166,7 @@ if __name__ == "__main__":
             noise=0
             background=0
 
-        fg_ir=pyregion.open(args.fgr).as_imagecoord(rm.prhd)
+        fg_ir=pyregion.open(args.fgr).as_imagecoord(rm.fhead)
 
         if args.indiv:
             for n,reg in enumerate(fg_ir):
