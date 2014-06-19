@@ -44,9 +44,17 @@ class radiomap:
             if self.frq==None:
                 self.frq=self.prhd.get('RESTFREQ')
                 if self.frq==None:
-                    ctype3=self.prhd.get('CTYPE3')
-                    if ctype3=='FREQ':
-                        self.frq=self.prhd.get('CRVAL3')
+                    i=1
+                    while True:
+                        keyword='CTYPE'+str(i)
+                        try:
+                            ctype=self.prhd.get(keyword)
+                        except KeyError:
+                            break
+                        if ctype=='FREQ':
+                            self.frq=self.prhd.get('CRVAL'+str(i))
+                            break
+                        i+=1
                     else:
                         print('Warning, can\'t get frequency -- set to zero')
                         self.frq=0
@@ -68,8 +76,11 @@ class radiomap:
 
 # now a bit of a hack to extract the image. Some AIPS-type images are data cubes with two null axes; other FITS images are just 2D images.
 
-            if len(np.shape(self.f.data))==4:
+            axes=len(np.shape(self.f.data))
+            if axes==4:
                 self.d=self.f.data[0,0]
+            elif axes==3:
+                self.d=self.f.data[0]
             else:
                 self.d=self.f.data
 
