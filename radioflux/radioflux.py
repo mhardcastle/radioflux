@@ -59,12 +59,15 @@ class radiomap:
             if self.bmaj==None:
                 if verbose:
                     print 'Can\'t find BMAJ in headers, checking history'
-                history=self.prhd['HISTORY']
-                for line in history:
-                    if 'CLEAN BMAJ' in line:
-                        bits=line.split()
-                        self.bmaj=float(bits[3])
-                        self.bmin=float(bits[5])
+                try:
+                    history=self.prhd['HISTORY']
+                    for line in history:
+                        if 'CLEAN BMAJ' in line:
+                            bits=line.split()
+                            self.bmaj=float(bits[3])
+                            self.bmin=float(bits[5])
+                except KeyError:
+                    pass
                                 
             if self.bmaj==None:
                 raise RadioError('No beam information found')
@@ -77,9 +80,8 @@ class radiomap:
                     i=1
                     while True:
                         keyword='CTYPE'+str(i)
-                        try:
-                            ctype=self.prhd.get(keyword)
-                        except KeyError:
+                        ctype=self.prhd.get(keyword)
+                        if ctype==None:
                             break
                         if ctype=='FREQ':
                             self.frq=self.prhd.get('CRVAL'+str(i))
@@ -105,7 +107,6 @@ class radiomap:
                 print 'beam area is',self.area,'pixels'
 
             self.fhead,self.d=flatten(fitsfile)
-            print np.shape(self.d)
 
 class applyregion:
     """ apply a region from pyregion to a radiomap """
