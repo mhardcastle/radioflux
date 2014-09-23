@@ -52,10 +52,16 @@ class radiomap:
             self.f=fitsfile[0]
             self.prhd=fitsfile[0].header
             self.units=self.prhd.get('BUNIT')
+            if self.units==None:
+                self.units=self.prhd.get('UNIT')
             if self.units!='JY/BEAM':
                 print 'Warning: units are',self.units,'but code expects JY/BEAM'
             self.bmaj=self.prhd.get('BMAJ')
             self.bmin=self.prhd.get('BMIN')
+            if self.bmaj==None:
+                # Try RESOL1 and RESOL2
+                self.bmaj=self.prhd.get('RESOL1')
+                self.bmin=self.prhd.get('RESOL2')
             if self.bmaj==None:
                 if verbose:
                     print 'Can\'t find BMAJ in headers, checking history'
@@ -76,29 +82,32 @@ class radiomap:
             self.frq=self.prhd.get('RESTFRQ')
             if self.frq==None:
                 self.frq=self.prhd.get('RESTFREQ')
-                if self.frq==None:
-                    i=1
-                    while True:
-                        keyword='CTYPE'+str(i)
-                        ctype=self.prhd.get(keyword)
-                        if ctype==None:
-                            break
-                        if ctype=='FREQ':
-                            self.frq=self.prhd.get('CRVAL'+str(i))
-                            break
-                        i+=1
-                    else:
-                        print('Warning, can\'t get frequency -- set to zero')
-                        self.frq=0
+            if self.frq==None:
+                self.frq=self.prhd.get('FREQ')
+            if self.frq==None:
+                i=1
+                while True:
+                    keyword='CTYPE'+str(i)
+                    ctype=self.prhd.get(keyword)
+                    if ctype==None:
+                        break
+                    if ctype=='FREQ':
+                        self.frq=self.prhd.get('CRVAL'+str(i))
+                        break
+                    i+=1
+
+            if self.frq==None:
+                print('Warning, can\'t get frequency -- set to zero')
+                self.frq=0
 
             w=wcs.WCS(self.prhd)
             cd1=-w.wcs.cdelt[0]
             cd2=w.wcs.cdelt[1]
-            if ((cd1-cd2)/cd1)>1.0001:
-                raise RadioError('Pixels are not square (%g, %g)' % (cd1, cd2))
+            if ((cd1-cd2)/cd1)>1.0001 and ((bmaj-bmin)/bmin)>1.0001:
+                raise RadioError('Pixels are not square (%g, %g) and beam is elliptical' % (cd1, cd2))
 
             self.bmaj/=cd1
-            self.bmin/=cd1
+            self.bmin/=cd2
             if verbose:
                 print 'beam is',self.bmaj,'by',self.bmin,'pixels'
 
@@ -176,14 +185,5 @@ if __name__ == "__main__":
         else:
             printflux(rm,fg_ir,noise,args.bgsub,background)
 
-#        if args.bgsub:
-#            fg=applyregion(rm,fg_ir,offsource=noise,background=bg.mean)
-#        else:
-#            fg=applyregion(rm,fg_ir,offsource=noise)
-#        
-#        if noise:
-#            print filename,'%g' % rm.frq,fg.flux,fg.error
-#        else:
-#            print filename,'%g' % rm.frq,fg.flux
         fitsfile.close()
 
