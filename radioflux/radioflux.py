@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import pyregion
+import scipy.stats
 from astropy.io import fits
 from astropy import wcs
 import numpy as np
@@ -127,9 +128,9 @@ class applyregion:
         self.pixels=np.sum(mask)
         data=np.extract(mask,rm.d)
         data-=bgval
-        self.rms=data.std()
-        self.flux=data.sum()/rm.area
-        self.mean=data.mean()
+        self.rms=scipy.stats.nanstd(data)
+        self.flux=data[np.logical_not(np.isnan(data))].sum()/rm.area
+        self.mean=scipy.stats.nanmean(data)
         if 'offsource' in extras:
             self.error=extras['offsource']*np.sqrt(self.pixels/rm.area)
 
