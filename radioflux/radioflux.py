@@ -55,7 +55,7 @@ class radiomap:
             self.units=self.prhd.get('BUNIT')
             if self.units==None:
                 self.units=self.prhd.get('UNIT')
-            if self.units!='JY/BEAM':
+            if self.units!='JY/BEAM' and self.units!='Jy/beam':
                 print 'Warning: units are',self.units,'but code expects JY/BEAM'
             self.bmaj=self.prhd.get('BMAJ')
             self.bmin=self.prhd.get('BMIN')
