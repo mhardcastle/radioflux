@@ -79,9 +79,9 @@ class radiomap:
             if self.bmaj is None:
                 raise RadioError('No beam information found')
 
-# Various possibilities for the frequency
-# It's possible that a bad (zero) value will be present, so keep checking if
-# one is found.
+            # Various possibilities for the frequency. It's possible
+            # that a bad (zero) value will be present, so keep
+            # checking if one is found.
 
             self.frq=self.prhd.get('RESTFRQ')
             if self.frq is None or self.frq==0:
@@ -139,7 +139,7 @@ class applyregion:
 
 # Command-line running
 
-def printflux(rm,region,noise,bgsub,background=0,label=''):
+def printflux(filename,rm,region,noise,bgsub,background=0,label=''):
     if bgsub:
         fg=applyregion(rm,region,offsource=noise,background=background)
     else:
@@ -150,7 +150,47 @@ def printflux(rm,region,noise,bgsub,background=0,label=''):
     else:
         print filename,label,'%g' % rm.frq,fg.flux
 
+def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printflux):
+    """Determine the flux in a region file for a set of files. This is the
+    default action for the code called on the command line, but
+    may be useful to other code as well.
 
+    Keyword arguments:
+    files -- list of files (mandatory)
+    fdr -- foreground region name (mandatory)
+    bgr -- background region name (optional)
+    individual -- separate region into individual sub-regions
+    bgsub -- subtract background
+    action -- what to do once fluxes are measured: allows a user-defined action
+              which must be a drop-in replacement for printflux
+    """
+
+    for filename in files:
+        fitsfile=fits.open(filename)
+        rm=radiomap(fitsfile)
+        if bgr:
+            bg_ir=pyregion.open(bgr).as_imagecoord(rm.fhead)
+            bg=applyregion(rm,bg_ir)
+            noise=bg.rms
+            background=bg.mean
+        else:
+            if bgsub:
+                raise RadioError('Background subtraction requested but no bg region')
+            noise=0
+            background=0
+
+        fg_ir=pyregion.open(fgr).as_imagecoord(rm.fhead)
+
+        if individual:
+            for n,reg in enumerate(fg_ir):
+                fg=pyregion.ShapeList([reg])
+                action(filename,rm,fg,noise,bgsub,background,label=n+1)
+        else:
+            action(filename,rm,fg_ir,noise,bgsub,background)
+
+        fitsfile.close()
+
+        
 if __name__ == "__main__":
     import sys
     import argparse
@@ -160,34 +200,9 @@ if __name__ == "__main__":
                         help='FITS files to process')
     parser.add_argument('-f','--foreground', dest='fgr', action='store',default='ds9.reg',help='Foreground region file to use')
     parser.add_argument('-b','--background', dest='bgr', action='store',default='',help='Background region file to use')
-    parser.add_argument('-i','--individual', dest='indiv', action='store_const', const=1,default=0,help='Break composite region file into individual regions')
-    parser.add_argument('-s','--subtract', dest='bgsub', action='store_const', const=1,default=0,help='Subtract background')
+    parser.add_argument('-i','--individual', dest='indiv', action='store_true',default=False,help='Break composite region file into individual regions')
+    parser.add_argument('-s','--subtract', dest='bgsub', action='store_true',default=False,help='Subtract background')
 
     args = parser.parse_args()
 
-    c=0
-    for filename in args.files:
-        fitsfile=fits.open(filename)
-        rm=radiomap(fitsfile)
-        if args.bgr:
-            bg_ir=pyregion.open(args.bgr).as_imagecoord(rm.fhead)
-            bg=applyregion(rm,bg_ir)
-            noise=bg.rms
-            background=bg.mean
-        else:
-            if args.bgsub:
-                raise RadioError('Background subtraction requested but no bg region')
-            noise=0
-            background=0
-
-        fg_ir=pyregion.open(args.fgr).as_imagecoord(rm.fhead)
-
-        if args.indiv:
-            for n,reg in enumerate(fg_ir):
-                fg=pyregion.ShapeList([reg])
-                printflux(rm,fg,noise,args.bgsub,background,label=n+1)
-        else:
-            printflux(rm,fg_ir,noise,args.bgsub,background)
-
-        fitsfile.close()
-
+    flux_for_files(args.files,args.fgr,args.bgr,args.indiv,args.bgsub)
