@@ -81,11 +81,11 @@ class radiomap:
 
 # Various possibilities for the frequency
             self.frq=self.prhd.get('RESTFRQ')
-            if self.frq==None or self.frq=0:
+            if self.frq is None or self.frq==0:
                 self.frq=self.prhd.get('RESTFREQ')
-            if self.frq==None or self.frq=0:
+            if self.frq is None or self.frq==0:
                 self.frq=self.prhd.get('FREQ')
-            if self.frq==None or self.frq=0:
+            if self.frq is None or self.frq==0:
                 i=1
                 while True:
                     keyword='CTYPE'+str(i)
