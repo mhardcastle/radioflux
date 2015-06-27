@@ -53,17 +53,17 @@ class radiomap:
             self.f=fitsfile[0]
             self.prhd=fitsfile[0].header
             self.units=self.prhd.get('BUNIT')
-            if self.units==None:
+            if self.units is None:
                 self.units=self.prhd.get('UNIT')
             if self.units!='JY/BEAM' and self.units!='Jy/beam':
                 print 'Warning: units are',self.units,'but code expects JY/BEAM'
             self.bmaj=self.prhd.get('BMAJ')
             self.bmin=self.prhd.get('BMIN')
-            if self.bmaj==None:
+            if self.bmaj is None:
                 # Try RESOL1 and RESOL2
                 self.bmaj=self.prhd.get('RESOL1')
                 self.bmin=self.prhd.get('RESOL2')
-            if self.bmaj==None:
+            if self.bmaj is None:
                 if verbose:
                     print 'Can\'t find BMAJ in headers, checking history'
                 try:
@@ -76,10 +76,13 @@ class radiomap:
                 except KeyError:
                     pass
                                 
-            if self.bmaj==None:
+            if self.bmaj is None:
                 raise RadioError('No beam information found')
 
 # Various possibilities for the frequency
+# It's possible that a bad (zero) value will be present, so keep checking if
+# one is found.
+
             self.frq=self.prhd.get('RESTFRQ')
             if self.frq is None or self.frq==0:
                 self.frq=self.prhd.get('RESTFREQ')
@@ -90,14 +93,14 @@ class radiomap:
                 while True:
                     keyword='CTYPE'+str(i)
                     ctype=self.prhd.get(keyword)
-                    if ctype==None:
+                    if ctype is None:
                         break
                     if ctype=='FREQ':
                         self.frq=self.prhd.get('CRVAL'+str(i))
                         break
                     i+=1
 
-            if self.frq==None:
+            if self.frq is None:
                 print('Warning, can\'t get frequency -- set to zero')
                 self.frq=0
 
