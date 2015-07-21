@@ -68,6 +68,9 @@ class radiomap:
                     print 'Can\'t find BMAJ in headers, checking history'
                 try:
                     history=self.prhd['HISTORY']
+                except KeyError:
+                    history=None
+                if history is not None:
                     for line in history:
                         if 'HISTORY' in line:
                             continue # stops it finding nested history
@@ -75,8 +78,6 @@ class radiomap:
                             bits=line.split()
                             self.bmaj=float(bits[3])
                             self.bmin=float(bits[5])
-                except KeyError:
-                    pass
                                 
             if self.bmaj is None:
                 raise RadioError('No beam information found')
