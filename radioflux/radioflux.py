@@ -69,6 +69,8 @@ class radiomap:
                 try:
                     history=self.prhd['HISTORY']
                     for line in history:
+                        if 'HISTORY' in line:
+                            continue # stops it finding nested history
                         if 'CLEAN BMAJ' in line:
                             bits=line.split()
                             self.bmaj=float(bits[3])
