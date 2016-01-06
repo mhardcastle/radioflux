@@ -25,33 +25,34 @@ print 'FG region is',f_region
 print 'BG region is',b_region
 
 f=fits.open(filename)
-rm=radiomap(f,verbose=1)
+rm=radiomap(f,verbose=True)
 
-print 'Frequency is %g Hz' % rm.frq 
+#print 'Frequency is %g Hz' % rm.frq 
 
 # now apply regions
 
 if b_region:
-    bg_ir=pyregion.parse(b_region).as_imagecoord(rm.prhd)
+    bg_ir=pyregion.parse(b_region).as_imagecoord(rm.headers[0])
     bg=applyregion(rm,bg_ir)
     print 'Pixels in background region',bg.pixels
-    print 'Background rms is',bg.rms,'Jy/beam'
-    print 'Background mean is',bg.mean,'Jy/beam'
+    for i in range(rm.nchans):
+        print '%g Hz Background rms is %f Jy/beam' % (rm.frq[i],bg.rms[i])
+        print '              Background mean is',bg.mean[i],'Jy/beam'
     noise=bg.rms
 else:
     if bgsub:
         raise Error('Background subtraction requested but no bg region')
-    noise=0
+    noise=None
 
-fg_ir=pyregion.parse(f_region).as_imagecoord(rm.prhd)
+fg_ir=pyregion.parse(f_region).as_imagecoord(rm.headers[0])
 if bgsub:
     fg=applyregion(rm,fg_ir,offsource=noise,background=bg.mean)
 else:
     fg=applyregion(rm,fg_ir,offsource=noise)
 
-print 'Pixels passed by mask',fg.pixels
-
-if noise:
-    print 'Region flux is',fg.flux,'+/-',fg.error,'Jy'
-else:
-    print 'Region flux is',fg.flux,'Jy'
+print 'Pixels in foreground region',fg.pixels
+for i in range(rm.nchans):
+    if noise:
+        print '%g Hz Region flux is %f +/- %f Jy' % (rm.frq[i],fg.flux[i],fg.error[i])
+    else:
+        print '%g Hz Region flux is %f Jy' % (rm.frq[i],fg.flux[i])

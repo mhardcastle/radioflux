@@ -135,7 +135,7 @@ class radiomap:
                 if freqaxis>0:
                     nchans=self.prhd.get('NAXIS%i' % freqaxis)
                     if verbose:
-                        print 'There are %i channels' % nchans
+                        print 'There are %i channel(s)' % nchans
                     self.nchans=nchans
             else:
                 self.nchans=1
@@ -171,7 +171,7 @@ class radiomap:
                 print('Warning, can\'t get frequency -- set to zero')
                 self.frq=0
             if verbose:
-                print 'Frequencies are',self.frq
+                print 'Frequencies are',self.frq,'Hz'
 
 #            self.fhead,self.d=flatten(fitsfile)
 
