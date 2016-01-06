@@ -8,7 +8,7 @@ import numpy as np
 import sys
 import warnings
 
-def flatten(f):
+def flatten(f,channel=0,freqaxis=0):
     """ Flatten a fits file so that it becomes a 2D image. Return new header and data """
 
     naxis=f[0].header['NAXIS']
@@ -35,7 +35,16 @@ def flatten(f):
         if r:
             header[k]=r
 
-    slice=(0,)*(naxis-2)+(np.s_[:],)*2
+    slice=[]
+    for i in range(naxis,0,-1):
+        if i<=2:
+            slice.append(np.s_[:],)
+        elif i==freqaxis:
+            slice.append(channel)
+        else:
+            slice.append(0)
+        
+# slice=(0,)*(naxis-2)+(np.s_[:],)*2
     return header,f[0].data[slice]
 
 class RadioError(Exception):
@@ -44,14 +53,15 @@ class RadioError(Exception):
 
 class radiomap:
     """ Process a fits file as though it were a radio map, calculating beam areas etc """
-    def __init__(self, fitsfile,**extras):
+    def __init__(self, fitsfile,verbose=False):
         # Catch warnings to avoid datfix errors
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             gfactor=2.0*np.sqrt(2.0*np.log(2.0))
-            verbose=('verbose' in extras)
             self.f=fitsfile[0]
             self.prhd=fitsfile[0].header
+
+            # Get units and resolution
             self.units=self.prhd.get('BUNIT')
             if self.units is None:
                 self.units=self.prhd.get('UNIT')
@@ -82,31 +92,6 @@ class radiomap:
             if self.bmaj is None:
                 raise RadioError('No beam information found')
 
-            # Various possibilities for the frequency. It's possible
-            # that a bad (zero) value will be present, so keep
-            # checking if one is found.
-
-            self.frq=self.prhd.get('RESTFRQ')
-            if self.frq is None or self.frq==0:
-                self.frq=self.prhd.get('RESTFREQ')
-            if self.frq is None or self.frq==0:
-                self.frq=self.prhd.get('FREQ')
-            if self.frq is None or self.frq==0:
-                i=1
-                while True:
-                    keyword='CTYPE'+str(i)
-                    ctype=self.prhd.get(keyword)
-                    if ctype is None:
-                        break
-                    if ctype=='FREQ':
-                        self.frq=self.prhd.get('CRVAL'+str(i))
-                        break
-                    i+=1
-
-            if self.frq is None:
-                print('Warning, can\'t get frequency -- set to zero')
-                self.frq=0
-
             w=wcs.WCS(self.prhd)
             cd1=-w.wcs.cdelt[0]
             cd2=w.wcs.cdelt[1]
@@ -122,23 +107,94 @@ class radiomap:
             if verbose:
                 print 'beam area is',self.area,'pixels'
 
-            self.fhead,self.d=flatten(fitsfile)
+            # Now check what sort of a map we have
+            naxis=self.prhd['NAXIS']
+            self.cube=False
+            if naxis<2 or naxis>4:
+                raise RadioError('Too many or too few axes to proceed (%i)' % naxis)
+            if naxis>2:
+                # a cube, what sort?
+                frequency=0
+                self.cube=True
+                freqaxis=-1
+                stokesaxis=-1
+                for i in range(3,naxis+1):
+                    ctype=self.prhd.get('CTYPE%i' % i)
+                    if 'FREQ' in ctype:
+                        freqaxis=i
+                    elif 'STOKES' in ctype:
+                        stokesaxis=i
+                    else:
+                        raise RadioError('Unknown CTYPE %i = %s' % (i,ctype))
+                if verbose:
+                    print 'This is a cube with freq axis %i and Stokes axis %i' % (freqaxis, stokesaxis)
+                if stokesaxis>0:
+                    nstokes=self.prhd.get('NAXIS%i' % stokesaxis)
+                    if nstokes>1:
+                        raise RadioError('Multiple Stokes parameters present, not handled')
+                if freqaxis>0:
+                    nchans=self.prhd.get('NAXIS%i' % freqaxis)
+                    if verbose:
+                        print 'There are %i channels' % nchans
+                    self.nchans=nchans
+            else:
+                self.nchans=1
+                    
+
+            # Various possibilities for the frequency. It's possible
+            # that a bad (zero) value will be present, so keep
+            # checking if one is found.
+
+            if not(self.cube) or freqaxis<0:
+                # frequency, if present, must be in another keyword
+                frequency=self.prhd.get('RESTFRQ')
+                if frequency is None or frequency==0:
+                    frequency=self.prhd.get('RESTFREQ')
+                if frequency is None or frequency==0:
+                    frequency=self.prhd.get('FREQ')
+                self.frq=[frequency]
+                self.headers=[self.prhd]
+                self.d=[fitsfile[0].data]
+            else:
+                # if this is a cube, frequency/ies should be in freq header
+                basefreq=self.prhd.get('CRVAL%i' % freqaxis)
+                deltafreq=self.prhd.get('CDELT%i' % freqaxis)
+                self.frq=[basefreq+deltafreq*i for i in range(nchans)]
+                self.d=[]
+                self.headers=[]
+                for i in range(nchans):
+                    header,data=flatten(fitsfile,freqaxis=freqaxis,channel=i)
+                    self.d.append(data)
+                    self.headers.append(header)
+
+            if self.frq is None:
+                print('Warning, can\'t get frequency -- set to zero')
+                self.frq=0
+            if verbose:
+                print 'Frequencies are',self.frq
+
+#            self.fhead,self.d=flatten(fitsfile)
 
 class applyregion:
     """ apply a region from pyregion to a radiomap """
-    def __init__(self,rm,region,**extras):
-        bgval=0;
-        if 'background' in extras:
-            bgval=extras['background']
-        mask=region.get_mask(hdu=rm.f,shape=np.shape(rm.d))
-        self.pixels=np.sum(mask)
-        data=np.extract(mask,rm.d)
-        data-=bgval
-        self.rms=scipy.stats.nanstd(data)
-        self.flux=data[np.logical_not(np.isnan(data))].sum()/rm.area
-        self.mean=scipy.stats.nanmean(data)
-        if 'offsource' in extras:
-            self.error=extras['offsource']*np.sqrt(self.pixels/rm.area)
+    def __init__(self,rm,region,background=None,offsource=None):
+        self.rms=[]
+        self.flux=[]
+        self.mean=[]
+        self.error=[]
+        bgval=0
+        if background is not None:
+            bgval=background
+        for i,d in enumerate(rm.d):
+            mask=region.get_mask(hdu=rm.f,shape=np.shape(d))
+            self.pixels=np.sum(mask)
+            data=np.extract(mask,d)
+            data-=bgval
+            self.rms.append(scipy.stats.nanstd(data))
+            self.flux.append(data[np.logical_not(np.isnan(data))].sum()/rm.area)
+            self.mean.append(scipy.stats.nanmean(data))
+            if offsource is not None:
+                self.error.append(offsource[i]*np.sqrt(self.pixels/rm.area))
 
 # Command-line running
 
@@ -148,10 +204,11 @@ def printflux(filename,rm,region,noise,bgsub,background=0,label=''):
     else:
         fg=applyregion(rm,region,offsource=noise)
 
-    if noise:
-        print filename,label,'%g' % rm.frq,fg.flux,fg.error
-    else:
-        print filename,label,'%g' % rm.frq,fg.flux
+    for i in range(rm.nchans):
+        if noise:
+            print filename,label,'%g' % rm.frq[i],fg.flux[i],fg.error[i]
+        else:
+            print filename,label,'%g' % rm.frq[i],fg.flux[i]
 
 def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printflux):
     """Determine the flux in a region file for a set of files. This is the
@@ -172,17 +229,17 @@ def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printf
         fitsfile=fits.open(filename)
         rm=radiomap(fitsfile)
         if bgr:
-            bg_ir=pyregion.open(bgr).as_imagecoord(rm.fhead)
+            bg_ir=pyregion.open(bgr).as_imagecoord(rm.headers[0])
             bg=applyregion(rm,bg_ir)
             noise=bg.rms
             background=bg.mean
         else:
             if bgsub:
                 raise RadioError('Background subtraction requested but no bg region')
-            noise=0
-            background=0
+            noise=None
+            background=None
 
-        fg_ir=pyregion.open(fgr).as_imagecoord(rm.fhead)
+        fg_ir=pyregion.open(fgr).as_imagecoord(rm.headers[0])
 
         if individual:
             for n,reg in enumerate(fg_ir):
