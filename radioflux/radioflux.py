@@ -169,7 +169,7 @@ class radiomap:
 
             if self.frq is None:
                 print('Warning, can\'t get frequency -- set to zero')
-                self.frq=0
+                self.frq=[0]
             if verbose:
                 print 'Frequencies are',self.frq,'Hz'
 
