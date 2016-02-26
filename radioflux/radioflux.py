@@ -95,7 +95,7 @@ class radiomap:
             w=wcs.WCS(self.prhd)
             cd1=-w.wcs.cdelt[0]
             cd2=w.wcs.cdelt[1]
-            if ((cd1-cd2)/cd1)>1.0001 and ((bmaj-bmin)/bmin)>1.0001:
+            if ((cd1-cd2)/cd1)>1.0001 and ((self.bmaj-self.bmin)/self.bmin)>1.0001:
                 raise RadioError('Pixels are not square (%g, %g) and beam is elliptical' % (cd1, cd2))
 
             self.bmaj/=cd1
@@ -205,10 +205,13 @@ def printflux(filename,rm,region,noise,bgsub,background=0,label=''):
         fg=applyregion(rm,region,offsource=noise)
 
     for i in range(rm.nchans):
+        freq=0
+        if rm.frq[i] is not None:
+            freq=rm.frq[i]
         if noise:
-            print filename,label,'%g' % rm.frq[i],fg.flux[i],fg.error[i]
+            print filename,label,'%g' % freq,fg.flux[i],fg.error[i]
         else:
-            print filename,label,'%g' % rm.frq[i],fg.flux[i]
+            print filename,label,'%g' % freq,fg.flux[i]
 
 def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printflux):
     """Determine the flux in a region file for a set of files. This is the
