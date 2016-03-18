@@ -21,11 +21,15 @@ bgsub=args.bgsub
 print '-------------------------------------------------------------'
 
 print 'Filename is',filename
-print 'FG region is',f_region
-print 'BG region is',b_region
+print 'FG region is <<'+f_region+'>>'
+print 'BG region is <<'+b_region+'>>'
 
 f=fits.open(filename)
-rm=radiomap(f,verbose=True)
+try:
+    rm=radiomap(f,verbose=True)
+except RadioError as e:
+    print 'FATAL ERROR: ',e
+    sys.exit()
 
 #print 'Frequency is %g Hz' % rm.frq 
 
