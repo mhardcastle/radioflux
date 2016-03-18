@@ -108,7 +108,8 @@ class radiomap:
                 print 'beam area is',self.area,'pixels'
 
             # Now check what sort of a map we have
-            naxis=self.prhd['NAXIS']
+            naxis=len(fitsfile[0].data.shape)
+            if verbose: print 'We have',naxis,'axes'
             self.cube=False
             if naxis<2 or naxis>4:
                 raise RadioError('Too many or too few axes to proceed (%i)' % naxis)
@@ -152,7 +153,22 @@ class radiomap:
                     frequency=self.prhd.get('RESTFREQ')
                 if frequency is None or frequency==0:
                     frequency=self.prhd.get('FREQ')
+                if frequency is None or frequency==0:
+                    # It seems some maps present with a FREQ ctype
+                    # even if they don't have the appropriate axes!
+                    # The mind boggles.
+                    for i in range(5):
+                        type_s=self.prhd.get('CTYPE%i' % i)
+                        if type_s is not None and type_s[0:4]=='FREQ':
+                            frequency=self.prhd.get('CRVAL%i' % i)
                 self.frq=[frequency]
+                # now if there _are_ extra headers, get rid of them so pyregion WCS can work
+                for i in range(3,5):
+                    self.prhd.remove('CTYPE%i' %i)
+                    self.prhd.remove('CRVAL%i' %i)
+                    self.prhd.remove('CDELT%i' %i)
+                    self.prhd.remove('CRPIX%i' %i)
+                    self.prhd.remove('CROTA%i' %i)
                 self.headers=[self.prhd]
                 self.d=[fitsfile[0].data]
             else:
@@ -166,10 +182,10 @@ class radiomap:
                     header,data=flatten(fitsfile,freqaxis=freqaxis,channel=i)
                     self.d.append(data)
                     self.headers.append(header)
-
-            if self.frq is None:
-                print('Warning, can\'t get frequency -- set to zero')
-                self.frq=[0]
+            for i,f in enumerate(self.frq):
+                if f is None:
+                    print('Warning, can\'t get frequency %i -- set to zero' % i)
+                    self.frq[i]=0
             if verbose:
                 print 'Frequencies are',self.frq,'Hz'
 
@@ -205,15 +221,13 @@ def printflux(filename,rm,region,noise,bgsub,background=0,label=''):
         fg=applyregion(rm,region,offsource=noise)
 
     for i in range(rm.nchans):
-        freq=0
-        if rm.frq[i] is not None:
-            freq=rm.frq[i]
+        freq=rm.frq[i]
         if noise:
-            print filename,label,'%g' % freq,fg.flux[i],fg.error[i]
+            print filename,label,'%8.4g %10.6f %10.6f' % (freq,fg.flux[i],fg.error[i])
         else:
-            print filename,label,'%g' % freq,fg.flux[i]
+            print filename,label,'%8.4g %10.6f' % (freq,fg.flux[i])
 
-def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printflux):
+def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printflux,verbose=False):
     """Determine the flux in a region file for a set of files. This is the
     default action for the code called on the command line, but
     may be useful to other code as well.
@@ -230,7 +244,7 @@ def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printf
 
     for filename in files:
         fitsfile=fits.open(filename)
-        rm=radiomap(fitsfile)
+        rm=radiomap(fitsfile,verbose=verbose)
         if bgr:
             bg_ir=pyregion.open(bgr).as_imagecoord(rm.headers[0])
             bg=applyregion(rm,bg_ir)
@@ -247,12 +261,12 @@ def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printf
         if individual:
             for n,reg in enumerate(fg_ir):
                 fg=pyregion.ShapeList([reg])
-                action(filename,rm,fg,noise,bgsub,background,label=n+1)
+                r=action(filename,rm,fg,noise,bgsub,background,label=n+1)
         else:
-            action(filename,rm,fg_ir,noise,bgsub,background)
+            r=action(filename,rm,fg_ir,noise,bgsub,background)
 
         fitsfile.close()
-
+        return r
         
 if __name__ == "__main__":
     import sys
@@ -265,7 +279,8 @@ if __name__ == "__main__":
     parser.add_argument('-b','--background', dest='bgr', action='store',default='',help='Background region file to use')
     parser.add_argument('-i','--individual', dest='indiv', action='store_true',default=False,help='Break composite region file into individual regions')
     parser.add_argument('-s','--subtract', dest='bgsub', action='store_true',default=False,help='Subtract background')
+    parser.add_argument('-v','--verbose', dest='verbose', action='store_true',default=False,help='Be verbose')
 
     args = parser.parse_args()
 
-    flux_for_files(args.files,args.fgr,args.bgr,args.indiv,args.bgsub)
+    flux_for_files(args.files,args.fgr,args.bgr,args.indiv,args.bgsub,verbose=args.verbose)
