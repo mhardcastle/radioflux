@@ -19,8 +19,11 @@ setup(name='radioflux',
       author='Martin Hardcastle',
       author_email='mjh@extragalactic.info',
       url='http://www.extragalactic.info/',
+      description='Radio flux measurement for ds9',
+      download_url = 'https://github.com/mhardcastle/radioflux/tarball/1.2',
       version='1.2',
       packages=['radioflux'],
+      install_requires=['astropy','pyregion','numpy'],
       data_files=[('ds9',['radio-flux.ds9'])],
       cmdclass={"install": post_install}
       )
