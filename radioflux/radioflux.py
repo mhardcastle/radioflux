@@ -107,6 +107,11 @@ class radiomap:
             if verbose:
                 print 'beam area is',self.area,'pixels'
 
+            # Remove any PC... keywords we may have, they confuse the pyregion WCS
+            for i in range(1,5):
+                for j in range(1,5):
+                    self.quiet_remove('PC0%i_0%i' % (i,j))
+                
             # Now check what sort of a map we have
             naxis=len(fitsfile[0].data.shape)
             if verbose: print 'We have',naxis,'axes'
@@ -125,8 +130,10 @@ class radiomap:
                         freqaxis=i
                     elif 'STOKES' in ctype:
                         stokesaxis=i
+                    elif 'VOPT' in ctype:
+                        pass
                     else:
-                        raise RadioError('Unknown CTYPE %i = %s' % (i,ctype))
+                        print 'Warning: unknown CTYPE %i = %s' % (i,ctype)
                 if verbose:
                     print 'This is a cube with freq axis %i and Stokes axis %i' % (freqaxis, stokesaxis)
                 if stokesaxis>0:
@@ -164,11 +171,8 @@ class radiomap:
                 self.frq=[frequency]
                 # now if there _are_ extra headers, get rid of them so pyregion WCS can work
                 for i in range(3,5):
-                    self.prhd.remove('CTYPE%i' %i)
-                    self.prhd.remove('CRVAL%i' %i)
-                    self.prhd.remove('CDELT%i' %i)
-                    self.prhd.remove('CRPIX%i' %i)
-                    self.prhd.remove('CROTA%i' %i)
+                    for k in ['CTYPE','CRVAL','CDELT','CRPIX','CROTA','CUNIT']:
+                        self.quiet_remove(k+'%i' %i)
                 self.headers=[self.prhd]
                 self.d=[fitsfile[0].data]
             else:
@@ -189,7 +193,13 @@ class radiomap:
             if verbose:
                 print 'Frequencies are',self.frq,'Hz'
 
+    def quiet_remove(self,keyname):
+        if self.prhd.get(keyname,None) is not None:
+            self.prhd.remove(keyname)
+
+                
 #            self.fhead,self.d=flatten(fitsfile)
+
 
 class applyregion:
     """ apply a region from pyregion to a radiomap """
