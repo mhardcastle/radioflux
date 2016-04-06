@@ -233,9 +233,9 @@ def printflux(filename,rm,region,noise,bgsub,background=0,label=''):
     for i in range(rm.nchans):
         freq=rm.frq[i]
         if noise:
-            print filename,label,'%8.4g %10.6f %10.6f' % (freq,fg.flux[i],fg.error[i])
+            print filename,label,'%8.4g %10.6g %10.6g' % (freq,fg.flux[i],fg.error[i])
         else:
-            print filename,label,'%8.4g %10.6f' % (freq,fg.flux[i])
+            print filename,label,'%8.4g %10.6g' % (freq,fg.flux[i])
 
 def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printflux,verbose=False):
     """Determine the flux in a region file for a set of files. This is the

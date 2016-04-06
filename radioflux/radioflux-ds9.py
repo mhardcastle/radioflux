@@ -70,6 +70,6 @@ print 'Pixels in foreground region',fg.pixels
 for i in range(rm.nchans):
     freq=rm.frq[i]
     if noise:
-        print '%8.4g Hz Region flux is %f +/- %f Jy' % (freq,fg.flux[i],fg.error[i])
+        print '%8.4g Hz Region flux is %g +/- %g Jy' % (freq,fg.flux[i],fg.error[i])
     else:
-        print '%8.4g Hz Region flux is %f Jy' % (freq,fg.flux[i])
+        print '%8.4g Hz Region flux is %g Jy' % (freq,fg.flux[i])
