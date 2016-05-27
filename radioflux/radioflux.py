@@ -169,12 +169,19 @@ class radiomap:
                         if type_s is not None and type_s[0:4]=='FREQ':
                             frequency=self.prhd.get('CRVAL%i' % i)
                 self.frq=[frequency]
-                # now if there _are_ extra headers, get rid of them so pyregion WCS can work
-                for i in range(3,5):
-                    for k in ['CTYPE','CRVAL','CDELT','CRPIX','CROTA','CUNIT']:
-                        self.quiet_remove(k+'%i' %i)
-                self.headers=[self.prhd]
-                self.d=[fitsfile[0].data]
+                if self.cube:
+                    # a cube with no freq axis, e.g. VOPT. need to flatten
+                    header,data=flatten(fitsfile,freqaxis=freqaxis)
+                    self.headers=[header]
+                    self.d=[data]
+                    self.nchans=1
+                else:
+                    # now if there _are_ extra headers, get rid of them so pyregion WCS can work
+                    for i in range(3,5):
+                        for k in ['CTYPE','CRVAL','CDELT','CRPIX','CROTA','CUNIT']:
+                            self.quiet_remove(k+'%i' %i)
+                    self.headers=[self.prhd]
+                    self.d=[fitsfile[0].data]
             else:
                 # if this is a cube, frequency/ies should be in freq header
                 basefreq=self.prhd.get('CRVAL%i' % freqaxis)
