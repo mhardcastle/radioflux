@@ -231,12 +231,14 @@ class applyregion:
 
 # Command-line running
 
-def printflux(filename,rm,region,noise,bgsub,background=0,label=''):
+def printflux(filename,rm,region,noise,bgsub,background=0,label='',verbose=False):
     if bgsub:
         fg=applyregion(rm,region,offsource=noise,background=background)
     else:
         fg=applyregion(rm,region,offsource=noise)
 
+    if verbose:
+        print 'RMS values used:',fg.rms
     for i in range(rm.nchans):
         freq=rm.frq[i]
         if noise:
@@ -278,9 +280,9 @@ def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printf
         if individual:
             for n,reg in enumerate(fg_ir):
                 fg=pyregion.ShapeList([reg])
-                r=action(filename,rm,fg,noise,bgsub,background,label=n+1)
+                r=action(filename,rm,fg,noise,bgsub,background,label=n+1,verbose=verbose)
         else:
-            r=action(filename,rm,fg_ir,noise,bgsub,background)
+            r=action(filename,rm,fg_ir,noise,bgsub,background,verbose=verbose)
 
         fitsfile.close()
         return r
