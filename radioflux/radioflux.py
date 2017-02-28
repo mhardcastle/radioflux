@@ -223,9 +223,10 @@ class applyregion:
             self.pixels=np.sum(mask)
             data=np.extract(mask,d)
             data-=bgval
-            self.rms.append(scipy.stats.nanstd(data))
-            self.flux.append(data[np.logical_not(np.isnan(data))].sum()/rm.area)
-            self.mean.append(scipy.stats.nanmean(data))
+            nndata=data[~np.isnan(data)]
+            self.rms.append(np.std(nndata))
+            self.flux.append(np.sum(nndata)/rm.area)
+            self.mean.append(np.mean(nndata))
             if offsource is not None:
                 self.error.append(offsource[i]*np.sqrt(self.pixels/rm.area))
 
