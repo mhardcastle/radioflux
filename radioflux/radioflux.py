@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import pyregion
 import scipy.stats
 from astropy.io import fits
@@ -66,7 +67,7 @@ class radiomap:
             if self.units is None:
                 self.units=self.prhd.get('UNIT')
             if self.units!='JY/BEAM' and self.units!='Jy/beam':
-                print 'Warning: units are',self.units,'but code expects JY/BEAM'
+                print('Warning: units are',self.units,'but code expects JY/BEAM')
             self.bmaj=self.prhd.get('BMAJ')
             self.bmin=self.prhd.get('BMIN')
             if self.bmaj is None:
@@ -75,7 +76,7 @@ class radiomap:
                 self.bmin=self.prhd.get('RESOL2')
             if self.bmaj is None:
                 if verbose:
-                    print 'Can\'t find BMAJ in headers, checking history'
+                    print('Can\'t find BMAJ in headers, checking history')
                 try:
                     history=self.prhd['HISTORY']
                 except KeyError:
@@ -101,11 +102,11 @@ class radiomap:
             self.bmaj/=cd1
             self.bmin/=cd2
             if verbose:
-                print 'beam is',self.bmaj,'by',self.bmin,'pixels'
+                print('beam is',self.bmaj,'by',self.bmin,'pixels')
 
             self.area=2.0*np.pi*(self.bmaj*self.bmin)/(gfactor*gfactor)
             if verbose:
-                print 'beam area is',self.area,'pixels'
+                print('beam area is',self.area,'pixels')
 
             # Remove any PC... keywords we may have, they confuse the pyregion WCS
             for i in range(1,5):
@@ -114,7 +115,7 @@ class radiomap:
                 
             # Now check what sort of a map we have
             naxis=len(fitsfile[0].data.shape)
-            if verbose: print 'We have',naxis,'axes'
+            if verbose: print('We have',naxis,'axes')
             self.cube=False
             if naxis<2 or naxis>4:
                 raise RadioError('Too many or too few axes to proceed (%i)' % naxis)
@@ -133,9 +134,9 @@ class radiomap:
                     elif 'VOPT' in ctype:
                         pass
                     else:
-                        print 'Warning: unknown CTYPE %i = %s' % (i,ctype)
+                        print('Warning: unknown CTYPE %i = %s' % (i,ctype))
                 if verbose:
-                    print 'This is a cube with freq axis %i and Stokes axis %i' % (freqaxis, stokesaxis)
+                    print('This is a cube with freq axis %i and Stokes axis %i' % (freqaxis, stokesaxis))
                 if stokesaxis>0:
                     nstokes=self.prhd.get('NAXIS%i' % stokesaxis)
                     if nstokes>1:
@@ -143,7 +144,7 @@ class radiomap:
                 if freqaxis>0:
                     nchans=self.prhd.get('NAXIS%i' % freqaxis)
                     if verbose:
-                        print 'There are %i channel(s)' % nchans
+                        print('There are %i channel(s)' % nchans)
                     self.nchans=nchans
             else:
                 self.nchans=1
@@ -198,7 +199,7 @@ class radiomap:
                     print('Warning, can\'t get frequency %i -- set to zero' % i)
                     self.frq[i]=0
             if verbose:
-                print 'Frequencies are',self.frq,'Hz'
+                print('Frequencies are',self.frq,'Hz')
 
     def quiet_remove(self,keyname):
         if self.prhd.get(keyname,None) is not None:
@@ -239,13 +240,13 @@ def printflux(filename,rm,region,noise,bgsub,background=0,label='',verbose=False
         fg=applyregion(rm,region,offsource=noise)
 
     if verbose:
-        print 'RMS values used:',fg.rms
+        print('RMS values used:',fg.rms)
     for i in range(rm.nchans):
         freq=rm.frq[i]
         if noise:
-            print filename,label,'%8.4g %10.6g %10.6g' % (freq,fg.flux[i],fg.error[i])
+            print(filename,label,'%8.4g %10.6g %10.6g' % (freq,fg.flux[i],fg.error[i]))
         else:
-            print filename,label,'%8.4g %10.6g' % (freq,fg.flux[i])
+            print(filename,label,'%8.4g %10.6g' % (freq,fg.flux[i]))
 
 def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printflux,verbose=False):
     """Determine the flux in a region file for a set of files. This is the
