@@ -30,7 +30,7 @@ def flatten(f,channel=0,freqaxis=0):
     
     header = wn.to_header()
     header["NAXIS"]=2
-    copy=('EQUINOX','EPOCH')
+    copy=('EQUINOX','EPOCH','NAXIS1','NAXIS2','DATEREF','MJDREFI','MJDREFF')
     for k in copy:
         r=f[0].header.get(k)
         if r:
@@ -267,6 +267,7 @@ def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printf
         fitsfile=fits.open(filename)
         rm=radiomap(fitsfile,verbose=verbose)
         if bgr:
+            print(rm.headers[0])
             bg_ir=pyregion.open(bgr).as_imagecoord(rm.headers[0])
             bg=applyregion(rm,bg_ir)
             noise=bg.rms
