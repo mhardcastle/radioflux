@@ -267,7 +267,6 @@ def flux_for_files(files,fgr,bgr=None,individual=False,bgsub=False,action=printf
         fitsfile=fits.open(filename)
         rm=radiomap(fitsfile,verbose=verbose)
         if bgr:
-            print(rm.headers[0])
             bg_ir=pyregion.open(bgr).as_imagecoord(rm.headers[0])
             bg=applyregion(rm,bg_ir)
             noise=bg.rms
