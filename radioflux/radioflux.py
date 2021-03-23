@@ -92,6 +92,8 @@ class radiomap:
                                 
             if self.bmaj is None:
                 raise RadioError('No beam information found')
+            self.bmaj=np.abs(self.bmaj)
+            self.bmin=np.abs(self.bmin)
 
             w=wcs.WCS(self.prhd)
             cd1=-w.wcs.cdelt[0]
