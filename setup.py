@@ -1,6 +1,6 @@
-from distutils.core import setup
+from setuptools import setup
 
-from distutils.command.install import install
+from setuptools.command.install import install
 
 class post_install(install):
     def run(self):
@@ -19,8 +19,8 @@ setup(name='radioflux',
       author_email='mjh@extragalactic.info',
       url='http://www.extragalactic.info/',
       description='Radio flux measurement for ds9',
-      download_url = 'https://github.com/mhardcastle/radioflux/tarball/1.2',
-      version='1.2',
+      download_url = 'https://github.com/mhardcastle/radioflux/archive/refs/tags/v1.3.tar.gz',
+      version='1.3',
       packages=['radioflux'],
       install_requires=['astropy','pyregion','numpy'],
       data_files=[('ds9',['radio-flux.ds9'])],
