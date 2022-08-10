@@ -11,4 +11,4 @@ git clone https://github.com/mhardcastle/radioflux
 cd radioflux/
 sudo python setup.py install
 ```
-Tested on Ubuntu 22 + DS9 8.3 and DS9 8.4b1
+Tested on Ubuntu 22 + DS9 8.3 and DS9 8.4b2
