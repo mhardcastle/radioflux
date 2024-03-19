@@ -45,7 +45,7 @@ def flatten(f,channel=0,freqaxis=0):
         else:
             sl.append(0)
         
-    return header,f[0].data[*sl]
+    return header,f[0].data[tuple(sl)]
 
 class RadioError(Exception):
     """Base class for exceptions in this module."""
