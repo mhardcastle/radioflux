@@ -36,17 +36,17 @@ def flatten(f,channel=0,freqaxis=0):
         if r:
             header[k]=r
 
-    slice=[]
+    sl=[]
     for i in range(naxis,0,-1):
         if i<=2:
-            slice.append(np.s_[:],)
+            sl.append(np.s_[:])
         elif i==freqaxis:
-            slice.append(channel)
+            sl.append(channel)
         else:
-            slice.append(0)
+            sl.append(0)
         
 # slice=(0,)*(naxis-2)+(np.s_[:],)*2
-    return header,f[0].data[slice]
+    return header,f[0].data[sl]
 
 class RadioError(Exception):
     """Base class for exceptions in this module."""
