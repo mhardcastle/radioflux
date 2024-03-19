@@ -45,8 +45,7 @@ def flatten(f,channel=0,freqaxis=0):
         else:
             sl.append(0)
         
-# slice=(0,)*(naxis-2)+(np.s_[:],)*2
-    return header,f[0].data[sl]
+    return header,f[0].data[*sl]
 
 class RadioError(Exception):
     """Base class for exceptions in this module."""
