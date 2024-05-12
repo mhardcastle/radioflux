@@ -2,11 +2,11 @@
 
 from __future__ import print_function
 import pyregion
-import scipy.stats
+# import scipy.stats
 from astropy.io import fits
 from astropy import wcs
 import numpy as np
-import sys
+# import sys
 import warnings
 
 def flatten(f,channel=0,freqaxis=0):
