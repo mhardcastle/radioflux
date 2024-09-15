@@ -5,6 +5,10 @@ v 1.0: initial release
 v 1.1: major bugfixes
 v 1.2: refactor to deal with spectral cubes
 
+## Main documentation
+
+https://www.extragalactic.info/~mjh/radio-flux.html
+
 ## Installation:
 ```
 git clone https://github.com/mhardcastle/radioflux
