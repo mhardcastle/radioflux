@@ -3,15 +3,15 @@
 from __future__ import print_function
 import pyregion
 from astropy.io import fits
-from astropy import wcs
-import numpy as np
+# from astropy import wcs
+# import numpy as np
 import sys
 from radioflux import *
 import argparse
 import re
 
 parser = argparse.ArgumentParser(description='ds9 plugin to measure fluxes from FITS files.')
-parser.add_argument('-s','--subtract', dest='bgsub', action='store_const', const=1,default=0,help='Subtract background')
+parser.add_argument('-s','--subtract', dest='bgsub', action='store_const', const=1,default=0, help='Subtract background')
 args = parser.parse_args()
 
 filename=sys.stdin.readline().rstrip()
